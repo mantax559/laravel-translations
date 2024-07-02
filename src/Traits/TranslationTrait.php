@@ -20,6 +20,19 @@ trait TranslationTrait
         $this->with[] = 'translation';
     }
 
+    public static function bootTranslatable(): void
+    {
+        static::saving(function (Model $model) {
+            $model->title = format_string($model->title);
+
+            if (empty($model->title)) {
+                return false;
+            }
+
+            return true;
+        });
+    }
+
     public function getAttribute($key): mixed
     {
         if ($this->isTranslationAttribute($key)) {
