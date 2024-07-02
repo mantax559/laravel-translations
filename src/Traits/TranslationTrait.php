@@ -18,6 +18,13 @@ trait TranslationTrait
         $this->with[] = 'translation';
     }
 
+    public static function bootTranslatable(): void
+    {
+        static::deleting(function (Model $model) {
+            $model->translations()->delete();
+        });
+    }
+
     public function getAttribute($key): mixed
     {
         if ($this->isTranslationAttribute($key)) {
@@ -25,6 +32,16 @@ trait TranslationTrait
         }
 
         return parent::getAttribute($key);
+    }
+
+    public function saveTranslations(array $translations): void
+    {
+        foreach ($translations as $locale => $translation) {
+            $translationModel = $this->translate($locale) ?? new $this->translationModel();
+            $translationModel->fill($translation);
+            $translationModel->locale = $locale;
+            $this->translations()->save($translationModel);
+        }
     }
 
     public function translation(): HasOne
