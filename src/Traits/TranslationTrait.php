@@ -98,9 +98,9 @@ trait TranslationTrait
             config('laravel-translations.fallback_locale'),
         ]));
 
-        $currenctLocale = app()->getLocale();
-        if (! in_array($currenctLocale, $locales)) {
-            throw new CurrentLocaleNotDefinedException($currenctLocale);
+        $currentLocale = app()->getLocale();
+        if (! in_array($currentLocale, $locales)) {
+            throw new CurrentLocaleNotDefinedException($currentLocale);
         }
 
         return $locales;
