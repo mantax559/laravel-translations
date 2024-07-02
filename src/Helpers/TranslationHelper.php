@@ -7,25 +7,27 @@ use Mantax559\LaravelTranslations\Enums\TranslationStatusEnum;
 
 class TranslationHelper
 {
-    public static function getValidationRules(bool $withDescription = false, bool $withTranslationStatus = false): array
+    public static function getValidationRules(string $translationName, bool $withDescription = false, bool $withTranslationStatus = false): array
     {
-        $rules = [];
-        foreach (array_keys(config('app.languages')) as $locale) {
-            $rule = [];
+        $rules = [
+            $translationName => ValidationHelper::getArrayRules(),
+        ];
+
+        foreach (config('laravel-translations.locales') as $index => $locale) {
+            if (cmprint($index, 0)) {
+                $rules["$translationName.$locale"] = ValidationHelper::getArrayRules();
+            }
 
             if ($withTranslationStatus) {
-                $rule[$locale.'.translation_status'] = ValidationHelper::getEnumRules(enum: TranslationStatusEnum::class);
+                $rules["$translationName.$locale.translation_status"] = ValidationHelper::getEnumRules(enum: TranslationStatusEnum::class);
             }
 
             if ($withDescription) {
-                $rule[$locale.'.title'] = ValidationHelper::getStringRules(required: "required_with:$locale.description");
-
-                $rule[$locale.'.description'] = ValidationHelper::getTextRules(required: false);
+                $rules["$translationName.$locale.title"] = ValidationHelper::getStringRules(required: "required_with:$locale.description");
+                $rules["$translationName.$locale.description"] = ValidationHelper::getTextRules(required: false);
             } else {
-                $rule[$locale.'.title'] = ValidationHelper::getStringRules(required: false);
+                $rules["$translationName.$locale.title"] = ValidationHelper::getStringRules(required: false);
             }
-
-            $rules += $rule;
         }
 
         return $rules;
