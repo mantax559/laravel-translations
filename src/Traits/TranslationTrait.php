@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Schema;
 use Mantax559\LaravelTranslations\Enums\TranslationStatusEnum;
+use Mantax559\LaravelTranslations\Exceptions\CurrentLocaleNotDefinedException;
 
 trait TranslationTrait
 {
@@ -16,13 +18,6 @@ trait TranslationTrait
     {
         $this->initializeModelTranslation();
         $this->with[] = 'translation';
-    }
-
-    public static function bootTranslatable(): void
-    {
-        static::deleting(function (Model $model) {
-            $model->translations()->delete();
-        });
     }
 
     public function getAttribute($key): mixed
@@ -54,8 +49,7 @@ trait TranslationTrait
     public function translations(): HasMany
     {
         return $this->hasMany($this->modelTranslation)
-            ->when($this->hasTranslationStatus(), fn ($query) => $query->orderByRaw("FIELD(translation_status, {$this->getTranslationStatusValues()}) ASC")
-            );
+            ->when($this->hasTranslationStatus(), fn ($query) => $query->orderByRaw("FIELD(translation_status, {$this->getTranslationStatusValues()}) ASC"));
     }
 
     public function translate(string $locale): mixed
@@ -68,11 +62,18 @@ trait TranslationTrait
         return $this->translations->where('locale', $locale)->isNotEmpty();
     }
 
-    public function scopeOrderByTranslation(Builder $query, string $translationField, bool $desc = false): Builder
+    public function scopeOrderByTranslation(Builder $query, string $translationField, bool $asc = true): Builder
     {
+        $categoryColumns = Schema::getColumnListing($this->getTable());
+        $selectClause = array_map(function ($column) {
+            return "{$this->getTable()}.$column";
+        }, $categoryColumns);
+
         return $query
-            ->leftJoin($this->modelTranslation->getTable(), "{$this->modelTranslation->getTable()}.{$this->getForeignKey()}", '=', "{$this->getTable()}.{$this->getKeyName()}")
-            ->orderBy("{$this->modelTranslation->getTable()}.{$translationField}", $desc ? 'desc' : 'asc');
+            ->select($selectClause)
+            ->leftJoin("{$this->modelTranslation->getTable()} as translation", "translation.{$this->getForeignKey()}", '=', "{$this->getTable()}.{$this->getKeyName()}")
+            ->orderBy("translation.$translationField", $asc ? 'asc' : 'desc')
+            ->groupBy($selectClause);
     }
 
     private function initializeModelTranslation(): void
@@ -92,11 +93,17 @@ trait TranslationTrait
 
     private function getLocales(): array
     {
-        return array_unique([
-            app()->getLocale(),
-            config('app.locale'),
-            config('app.fallback_locale'),
-        ]);
+        $locales = array_unique(array_merge(config('laravel-translations.locales'), [
+            config('laravel-translations.primary_locale'),
+            config('laravel-translations.fallback_locale'),
+        ]));
+
+        $currenctLocale = app()->getLocale();
+        if (! in_array($currenctLocale, $locales)) {
+            throw new CurrentLocaleNotDefinedException($currenctLocale);
+        }
+
+        return $locales;
     }
 
     private function getLocaleValues(): string
