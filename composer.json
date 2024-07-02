@@ -1,0 +1,42 @@
+{
+  "name": "mantax559/laravel-translations",
+  "description": "Laravel Translations",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [],
+  "authors": [
+    {
+      "name": "mantax559"
+    }
+  ],
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^10.0"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.0",
+    "orchestra/testbench": "^8.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Mantax559\\LaravelTranslations\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Mantax559\\LaravelTranslations\\": "tests"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Mantax559\\LaravelTranslations\\Providers\\AppServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
