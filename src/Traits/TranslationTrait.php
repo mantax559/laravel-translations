@@ -47,7 +47,7 @@ trait TranslationTrait
         foreach ($translations as $locale => $translation) {
             $translationModel = $this->translate($locale) ?? new $this->translationModel();
             $translationModel->fill($translation);
-            $translationModel->locale = $locale;
+            $translationModel->locale = format_string($locale, [3, 7]);
             $this->translations()->save($translationModel);
         }
     }
