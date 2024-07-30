@@ -20,7 +20,7 @@ trait TranslationTrait
         $this->with[] = 'translation';
     }
 
-    public static function bootTranslatable(): void
+    public static function bootTranslationTrait(): void
     {
         static::saving(function (Model $model) {
             $defaultColumn = config('laravel-translations.default_column');
@@ -58,35 +58,29 @@ trait TranslationTrait
     {
         return $this->hasOne($this->modelTranslation)
             ->whereIn('locale', TranslationHelper::getValidatedLocales())
-            ->orderByRaw("FIELD(locale, '".implode("', '", TranslationHelper::getValidatedLocales())."') ASC");
+            ->orderByRaw($this->getLocaleOrderByClause());
     }
 
     public function translations(): HasMany
     {
         return $this->hasMany($this->modelTranslation)
-            ->when($this->hasTranslationStatus(), fn ($query) => $query->orderByRaw('FIELD('.config('laravel-translations.translation_status_column').", '".implode("', '", TranslationStatusEnum::getArray())."') ASC"));
+            ->when($this->hasTranslationStatus(), fn ($query) => $query->orderByRaw($this->getTranslationStatusOrderByClause()));
     }
 
     public function translate(string $locale): mixed
     {
-        $locale = $this->formatLocale($locale);
-
-        return $this->translations->where('locale', $locale)->first();
+        return $this->translations->where('locale', $this->formatLocale($locale))->first();
     }
 
     public function hasTranslation(string $locale): bool
     {
-        $locale = $this->formatLocale($locale);
-
-        return $this->translations->where('locale', $locale)->isNotEmpty();
+        return $this->translations->where('locale', $this->formatLocale($locale))->isNotEmpty();
     }
 
     public function scopeOrderByTranslation(Builder $query, string $translationField, bool $asc = true): Builder
     {
-        $categoryColumns = Schema::getColumnListing($this->getTable());
-        $selectClause = array_map(function ($column) {
-            return "{$this->getTable()}.$column";
-        }, $categoryColumns);
+        $tableColumns = Schema::getColumnListing($this->getTable());
+        $selectClause = array_map(fn ($column) => "{$this->getTable()}.$column", $tableColumns);
 
         return $query
             ->select($selectClause)
@@ -102,7 +96,7 @@ trait TranslationTrait
 
     private function isTranslationAttribute(string $key): bool
     {
-        return array_key_exists($key, array_flip($this->modelTranslation->getFillable()));
+        return in_array($key, $this->modelTranslation->getFillable(), true);
     }
 
     private function hasTranslationStatus(): bool
@@ -112,10 +106,19 @@ trait TranslationTrait
 
     private function formatLocale(string $locale): string
     {
-        $locale = format_string($locale, [3, 7]);
+        $formattedLocale = format_string($locale, [3, 7]);
+        TranslationHelper::getValidatedLocales($formattedLocale);
 
-        TranslationHelper::getValidatedLocales($locale);
+        return $formattedLocale;
+    }
 
-        return $locale;
+    private function getLocaleOrderByClause(): string
+    {
+        return "FIELD(locale, '".implode("', '", TranslationHelper::getValidatedLocales())."') ASC";
+    }
+
+    private function getTranslationStatusOrderByClause(): string
+    {
+        return 'FIELD('.config('laravel-translations.translation_status_column').", '".implode("', '", TranslationStatusEnum::getArray())."') ASC";
     }
 }
