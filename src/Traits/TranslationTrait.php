@@ -46,7 +46,7 @@ trait TranslationTrait
     public function saveTranslations(array $translations): void
     {
         foreach ($translations as $locale => $translation) {
-            $locale = $this->formatLocale($locale);
+            $locale = $this->formatAndValidateLocale($locale);
             $translationModel = $this->translate($locale) ?? new $this->translationModel();
             $translationModel->fill($translation);
             $translationModel->locale = $locale;
@@ -57,25 +57,25 @@ trait TranslationTrait
     public function translation(): HasOne
     {
         return $this->hasOne($this->modelTranslation)
-            ->whereIn('locale', TranslationHelper::getValidatedLocales())
+            ->whereIn('locale', TranslationHelper::getLocales())
             ->orderByRaw($this->getOrderByClause());
     }
 
     public function translations(): HasMany
     {
         return $this->hasMany($this->modelTranslation)
-            ->whereIn('locale', TranslationHelper::getValidatedLocales())
+            ->whereIn('locale', TranslationHelper::getLocales())
             ->orderByRaw($this->getOrderByClause());
     }
 
     public function translate(string $locale): mixed
     {
-        return $this->translations->where('locale', $this->formatLocale($locale))->first();
+        return $this->translations->where('locale', $this->formatAndValidateLocale($locale))->first();
     }
 
     public function hasTranslation(string $locale): bool
     {
-        return $this->translations->where('locale', $this->formatLocale($locale))->isNotEmpty();
+        return $this->translations->where('locale', $this->formatAndValidateLocale($locale))->isNotEmpty();
     }
 
     public function scopeOrderByTranslation(Builder $query, string $translationField, bool $asc = true): Builder
@@ -105,7 +105,7 @@ trait TranslationTrait
         return $this->modelTranslation->hasCast(config('laravel-translations.translation_status_column'));
     }
 
-    private function formatLocale(string $locale): string
+    private function formatAndValidateLocale(string $locale): string
     {
         $formattedLocale = format_string($locale, [3, 7]);
         TranslationHelper::validateLocale($formattedLocale);
@@ -122,7 +122,7 @@ trait TranslationTrait
 
     private function getLocaleOrderByClause(): string
     {
-        $locales = TranslationHelper::getValidatedLocales();
+        $locales = TranslationHelper::getLocales();
         $formattedLocales = implode("', '", $locales);
 
         return "FIELD(locale, '$formattedLocales') ASC";
