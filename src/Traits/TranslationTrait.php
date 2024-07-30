@@ -57,15 +57,16 @@ trait TranslationTrait
     public function translation(): HasOne
     {
         return $this->hasOne($this->modelTranslation)
-            ->whereIn('locale', TranslationHelper::getLocales())
-            ->orderByRaw($this->getOrderByClause());
+            ->whereIn('locale', app()->getLocale());
     }
 
     public function translations(): HasMany
     {
         return $this->hasMany($this->modelTranslation)
-            ->whereIn('locale', TranslationHelper::getLocales())
-            ->orderByRaw($this->getOrderByClause());
+            ->whereIn('locale', config('laravel-translations.locales'))
+            ->orderByRaw($this->hasTranslationStatus()
+                ? $this->getTranslationStatusOrderByClause()
+                : $this->getLocaleOrderByClause());
     }
 
     public function translate(string $locale): mixed
@@ -113,16 +114,9 @@ trait TranslationTrait
         return $formattedLocale;
     }
 
-    private function getOrderByClause(): string
-    {
-        return $this->hasTranslationStatus()
-            ? $this->getTranslationStatusOrderByClause()
-            : $this->getLocaleOrderByClause();
-    }
-
     private function getLocaleOrderByClause(): string
     {
-        $locales = TranslationHelper::getLocales();
+        $locales = config('laravel-translations.locales');
         $formattedLocales = implode("', '", $locales);
 
         return "FIELD(locale, '$formattedLocales') ASC";
@@ -136,5 +130,4 @@ trait TranslationTrait
 
         return "FIELD($statusColumn, '$formattedStatusValues') ASC";
     }
-
 }
