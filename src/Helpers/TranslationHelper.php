@@ -61,20 +61,30 @@ class TranslationHelper
 
     public static function getValidatedLocales(?string $locale = null): array
     {
-        $locales = array_unique(array_merge(
+        $locales = self::getLocales();
+
+        $locale = $locale ?? app()->getLocale();
+
+        self::validateLocale($locale);
+
+        return $locales;
+    }
+
+    public static function validateLocale(string $locale): void
+    {
+        if (! in_array($locale, self::getLocales())) {
+            throw new LocaleNotDefinedException($locale);
+        }
+    }
+
+    private static function getLocales(): array
+    {
+        return array_unique(array_merge(
             config('laravel-translations.locales'),
             [
                 config('laravel-translations.primary_locale'),
                 config('laravel-translations.fallback_locale'),
             ]
         ));
-
-        $locale = $locale ?? app()->getLocale();
-
-        if (! in_array($locale, $locales)) {
-            throw new LocaleNotDefinedException($locale);
-        }
-
-        return $locales;
     }
 }

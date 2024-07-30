@@ -58,13 +58,14 @@ trait TranslationTrait
     {
         return $this->hasOne($this->modelTranslation)
             ->whereIn('locale', TranslationHelper::getValidatedLocales())
-            ->orderByRaw($this->getLocaleOrderByClause());
+            ->orderByRaw($this->getOrderByClause());
     }
 
     public function translations(): HasMany
     {
         return $this->hasMany($this->modelTranslation)
-            ->when($this->hasTranslationStatus(), fn ($query) => $query->orderByRaw($this->getTranslationStatusOrderByClause()));
+            ->whereIn('locale', TranslationHelper::getValidatedLocales())
+            ->orderByRaw($this->getOrderByClause());
     }
 
     public function translate(string $locale): mixed
@@ -101,24 +102,39 @@ trait TranslationTrait
 
     private function hasTranslationStatus(): bool
     {
-        return array_key_exists(config('laravel-translations.translation_status_column'), $this->modelTranslation->getCasts());
+        return $this->modelTranslation->hasCast(config('laravel-translations.translation_status_column'));
     }
 
     private function formatLocale(string $locale): string
     {
         $formattedLocale = format_string($locale, [3, 7]);
-        TranslationHelper::getValidatedLocales($formattedLocale);
+        TranslationHelper::validateLocale($formattedLocale);
 
         return $formattedLocale;
     }
 
+    private function getOrderByClause(): string
+    {
+        return $this->hasTranslationStatus()
+            ? $this->getTranslationStatusOrderByClause()
+            : $this->getLocaleOrderByClause();
+    }
+
     private function getLocaleOrderByClause(): string
     {
-        return "FIELD(locale, '".implode("', '", TranslationHelper::getValidatedLocales())."') ASC";
+        $locales = TranslationHelper::getValidatedLocales();
+        $formattedLocales = implode("', '", $locales);
+
+        return "FIELD(locale, '$formattedLocales') ASC";
     }
 
     private function getTranslationStatusOrderByClause(): string
     {
-        return 'FIELD('.config('laravel-translations.translation_status_column').", '".implode("', '", TranslationStatusEnum::getArray())."') ASC";
+        $statusColumn = config('laravel-translations.translation_status_column');
+        $statusValues = TranslationStatusEnum::getArray();
+        $formattedStatusValues = implode("', '", $statusValues);
+
+        return "FIELD($statusColumn, '$formattedStatusValues') ASC";
     }
+
 }
