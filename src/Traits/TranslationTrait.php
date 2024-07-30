@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 use Mantax559\LaravelTranslations\Enums\TranslationStatusEnum;
-use Mantax559\LaravelTranslations\Exceptions\LocaleNotDefinedException;
+use Mantax559\LaravelTranslations\Helpers\TranslationHelper;
 
 trait TranslationTrait
 {
@@ -23,9 +23,10 @@ trait TranslationTrait
     public static function bootTranslatable(): void
     {
         static::saving(function (Model $model) {
-            $model->title = format_string($model->title);
+            $defaultColumn = config('laravel-translations.default_column');
+            $model->$defaultColumn = format_string($model->$defaultColumn);
 
-            if (empty($model->title)) {
+            if (empty($model->$defaultColumn)) {
                 return false;
             }
 
@@ -56,14 +57,14 @@ trait TranslationTrait
     public function translation(): HasOne
     {
         return $this->hasOne($this->modelTranslation)
-            ->whereIn('locale', $this->validateAndGetLocales())
-            ->orderByRaw("FIELD(locale, '".implode("', '", $this->validateAndGetLocales())."') ASC");
+            ->whereIn('locale', TranslationHelper::getValidatedLocales())
+            ->orderByRaw("FIELD(locale, '".implode("', '", TranslationHelper::getValidatedLocales())."') ASC");
     }
 
     public function translations(): HasMany
     {
         return $this->hasMany($this->modelTranslation)
-            ->when($this->hasTranslationStatus(), fn ($query) => $query->orderByRaw("FIELD(translation_status, '".implode("', '", TranslationStatusEnum::getArray())."') ASC"));
+            ->when($this->hasTranslationStatus(), fn ($query) => $query->orderByRaw('FIELD('.config('laravel-translations.translation_status_column').", '".implode("', '", TranslationStatusEnum::getArray())."') ASC"));
     }
 
     public function translate(string $locale): mixed
@@ -106,29 +107,14 @@ trait TranslationTrait
 
     private function hasTranslationStatus(): bool
     {
-        return array_key_exists('translation_status', $this->modelTranslation->getCasts());
-    }
-
-    private function validateAndGetLocales(?string $locale = null): array
-    {
-        $locales = array_unique(array_merge(config('laravel-translations.locales'), [
-            config('laravel-translations.primary_locale'),
-            config('laravel-translations.fallback_locale'),
-        ]));
-
-        $currentLocale = $locale ?? app()->getLocale();
-        if (! in_array($currentLocale, $locales)) {
-            throw new LocaleNotDefinedException($currentLocale);
-        }
-
-        return $locales;
+        return array_key_exists(config('laravel-translations.translation_status_column'), $this->modelTranslation->getCasts());
     }
 
     private function formatLocale(string $locale): string
     {
         $locale = format_string($locale, [3, 7]);
 
-        $this->validateAndGetLocales($locale);
+        TranslationHelper::getValidatedLocales($locale);
 
         return $locale;
     }
