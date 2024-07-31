@@ -57,7 +57,7 @@ trait TranslationTrait
     public function translation(): HasOne
     {
         return $this->hasOne($this->modelTranslation)
-            ->whereIn('locale', app()->getLocale());
+            ->where('locale', app()->getLocale());
     }
 
     public function translations(): HasMany
