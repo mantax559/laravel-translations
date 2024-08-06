@@ -1,8 +1,6 @@
 <?php
 
 return [
-    'default_column' => 'title',
-
     'translation_status_column' => 'translation_status',
 
     'locales' => [
