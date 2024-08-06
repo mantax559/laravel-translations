@@ -23,7 +23,7 @@ trait TranslationTrait
     public static function bootTranslationTrait(): void
     {
         static::saving(function (Model $model) {
-            $defaultColumn = config('laravel-translations.default_column');
+            $defaultColumn = $this->defaultColumn;
             $model->$defaultColumn = format_string($model->$defaultColumn);
 
             if (empty($model->$defaultColumn)) {
@@ -57,7 +57,7 @@ trait TranslationTrait
     public function translation(): HasOne
     {
         return $this->hasOne($this->modelTranslation)
-            ->whereIn('locale', app()->getLocale());
+            ->where('locale', app()->getLocale());
     }
 
     public function translations(): HasMany
@@ -82,12 +82,20 @@ trait TranslationTrait
     public function scopeOrderByTranslation(Builder $query, string $translationField, bool $asc = true): Builder
     {
         $tableColumns = Schema::getColumnListing($this->getTable());
+
         $selectClause = array_map(fn ($column) => "{$this->getTable()}.$column", $tableColumns);
+
+        $translationTableAlias = "{$this->modelTranslation->getTable()} as translation";
+
+        $foreignKey = "translation.{$this->getForeignKey()}";
+        $primaryKey = "{$this->getTable()}.{$this->getKeyName()}";
+
+        $orderDirection = $asc ? 'asc' : 'desc';
 
         return $query
             ->select($selectClause)
-            ->leftJoin("{$this->modelTranslation->getTable()} as translation", "translation.{$this->getForeignKey()}", '=', "{$this->getTable()}.{$this->getKeyName()}")
-            ->orderBy("translation.$translationField", $asc ? 'asc' : 'desc')
+            ->leftJoin($translationTableAlias, $foreignKey, '=', $primaryKey)
+            ->orderBy("translation.$translationField", $orderDirection)
             ->groupBy($selectClause);
     }
 
@@ -124,10 +132,11 @@ trait TranslationTrait
 
     private function getTranslationStatusOrderByClause(): string
     {
-        $statusColumn = config('laravel-translations.translation_status_column');
-        $statusValues = TranslationStatusEnum::getArray();
-        $formattedStatusValues = implode("', '", $statusValues);
+        $translationStatusColumn = config('laravel-translations.translation_status_column');
 
-        return "FIELD($statusColumn, '$formattedStatusValues') ASC";
+        $translationStatusValues = TranslationStatusEnum::getArray();
+        $formattedTranslationStatusValues = implode("', '", $translationStatusValues);
+
+        return "FIELD($translationStatusColumn, '$formattedTranslationStatusValues') ASC";
     }
 }
