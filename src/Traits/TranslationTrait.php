@@ -23,10 +23,10 @@ trait TranslationTrait
     public static function bootTranslationTrait(): void
     {
         static::saving(function (Model $model) {
-            $defaultColumn = $this->defaultColumn;
-            $model->$defaultColumn = format_string($model->$defaultColumn);
+            $defaultTranslationColumn = $this->defaultTranslationColumn;
+            $model->$defaultTranslationColumn = format_string($model->$defaultTranslationColumn);
 
-            if (empty($model->$defaultColumn)) {
+            if (empty($model->$defaultTranslationColumn)) {
                 return false;
             }
 
