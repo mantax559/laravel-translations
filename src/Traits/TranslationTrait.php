@@ -63,7 +63,7 @@ trait TranslationTrait
     public function translations(): HasMany
     {
         return $this->hasMany($this->modelTranslation)
-            ->whereIn('locale', config('laravel-translations.locales'))
+            ->whereIn('locale', array_keys(config('laravel-translations.locales')))
             ->orderByRaw($this->hasTranslationStatus()
                 ? $this->getTranslationStatusOrderByClause()
                 : $this->getLocaleOrderByClause());
@@ -124,7 +124,7 @@ trait TranslationTrait
 
     private function getLocaleOrderByClause(): string
     {
-        $locales = config('laravel-translations.locales');
+        $locales = array_keys(config('laravel-translations.locales'));
         $formattedLocales = implode("', '", $locales);
 
         return "FIELD(locale, '$formattedLocales') ASC";

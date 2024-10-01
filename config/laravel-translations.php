@@ -4,7 +4,7 @@ return [
     'translation_status_column' => 'translation_status',
 
     'locales' => [
-        'en',
+        'en' => 'English',
     ],
 
     'primary_locale' => 'en',

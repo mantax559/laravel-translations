@@ -12,7 +12,7 @@ class TranslationHelper
     {
         $rules = [];
 
-        foreach (config('laravel-translations.locales') as $locale) {
+        foreach (array_keys(config('laravel-translations.locales')) as $locale) {
             $localeRules = [];
 
             if ($withTranslationStatus) {
@@ -47,12 +47,12 @@ class TranslationHelper
     {
         return array_map(function ($locale) {
             return ['id' => $locale, 'text' => $locale];
-        }, config('laravel-translations.locales'));
+        }, array_keys(config('laravel-translations.locales')));
     }
 
     public static function validateLocale(string $locale): void
     {
-        if (! in_array($locale, config('laravel-translations.locales'))) {
+        if (! in_array($locale, array_keys(config('laravel-translations.locales')))) {
             throw new LocaleNotDefinedException($locale);
         }
     }
