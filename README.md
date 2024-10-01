@@ -18,6 +18,12 @@ You can optionally publish the config file with:
 
     php artisan vendor:publish --provider="Mantax559\LaravelTranslations\Providers\AppServiceProvider" --tag=config
 
+### Routes
+
+To allow the user to change the language, add this route:
+
+    Route::get('language/{language}', [\Mantax559\LaravelTranslations\Controllers\LanguageController, 'change'])->name('language.change');
+
 ### Tests
 You can run tests with the command:
 
