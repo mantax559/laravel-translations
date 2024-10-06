@@ -15,9 +15,9 @@ class SetLocale
         if (Session::has('locale') && in_array(Session::get('locale'), array_keys(config('laravel-translations.locales')))) {
             App::setLocale(Session::get('locale'));
         } elseif (config('laravel-translations.primary_locale')) {
-            App::setLocale(Session::get('laravel-translations.primary_locale'));
+            App::setLocale(config('laravel-translations.primary_locale'));
         } else {
-            App::setLocale(Session::get('laravel-translations.fallback_locale'));
+            App::setLocale(config('laravel-translations.fallback_locale'));
         }
 
         return $next($request);
