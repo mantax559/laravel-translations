@@ -12,12 +12,6 @@ The package will automatically register its service provider.
 
 ## Customisation
 
-### Config
-
-You can optionally publish the config file with:
-
-    php artisan vendor:publish --provider="Mantax559\LaravelTranslations\Providers\AppServiceProvider" --tag=config
-
 ### Routes
 
 To allow the user to change the language, add this route:
