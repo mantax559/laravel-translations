@@ -2,6 +2,7 @@
 
 namespace Mantax559\LaravelTranslations\Helpers;
 
+use Illuminate\Support\Facades\File;
 use Mantax559\LaravelHelpers\Helpers\ValidationHelper;
 use Mantax559\LaravelTranslations\Enums\TranslationStatusEnum;
 use Mantax559\LaravelTranslations\Exceptions\LocaleNotDefinedException;
@@ -12,11 +13,11 @@ class TranslationHelper
     {
         $rules = [];
 
-        foreach (array_keys(config('laravel-translations.locales')) as $locale) {
+        foreach (self::getLocales() as $locale) {
             $localeRules = [];
 
             if ($withTranslationStatus) {
-                $localeRules["$translationName.$locale.".config('laravel-translations.translation_status_column')] = ValidationHelper::getEnumRules(enum: TranslationStatusEnum::class);
+                $localeRules["$translationName.$locale.translation_status"] = ValidationHelper::getEnumRules(enum: TranslationStatusEnum::class);
             }
 
             $requiredFields = [];
@@ -47,13 +48,40 @@ class TranslationHelper
     {
         return array_map(function ($locale) {
             return ['id' => $locale, 'text' => $locale];
-        }, array_keys(config('laravel-translations.locales')));
+        }, self::getLocales());
     }
 
     public static function validateLocale(string $locale): void
     {
-        if (! in_array($locale, array_keys(config('laravel-translations.locales')))) {
+        if (! in_array($locale, self::getLocales())) {
             throw new LocaleNotDefinedException($locale);
         }
+    }
+
+    public static function getLocales(): array
+    {
+        $langPath = base_path('lang');
+
+        if (! File::exists($langPath)) {
+            return [];
+        }
+
+        if (! file_exists($langPath) || ! is_dir($langPath)) {
+            return [];
+        }
+
+        $jsonFiles = [];
+
+        $files = scandir($langPath);
+
+        foreach ($files as $file) {
+            $filePath = $langPath.DIRECTORY_SEPARATOR.$file;
+
+            if (is_file($filePath) && cmprstr(pathinfo($filePath, PATHINFO_EXTENSION), 'json')) {
+                $jsonFiles[] = pathinfo($filePath, PATHINFO_FILENAME);
+            }
+        }
+
+        return $jsonFiles;
     }
 }
